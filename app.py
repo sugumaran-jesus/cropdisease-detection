@@ -2,7 +2,9 @@ import os
 import gdown
 import numpy as np
 import tensorflow as tf
+import uuid                          # ✅ add this
 from flask import Flask, render_template, request
+from werkzeug.utils import secure_filename   # ✅ add this
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
 
@@ -54,10 +56,10 @@ class_names = sorted([
 def index():
     return render_template('index.html')
 
+# ✅ REPLACE YOUR OLD PREDICT ROUTE WITH THIS
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # Check file uploaded
         if 'file' not in request.files:
             return render_template('index.html', result="❌ No file uploaded")
 
@@ -66,8 +68,9 @@ def predict():
         if file.filename == '':
             return render_template('index.html', result="❌ No file selected")
 
-        # Save file
-        filename = file.filename
+        # Generate safe unique filename
+        ext = file.filename.rsplit('.', 1)[-1].lower()
+        filename = f"{uuid.uuid4().hex}.{ext}"
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
 
@@ -80,14 +83,12 @@ def predict():
         prediction = model.predict(img_array)
         confidence = round(float(np.max(prediction)) * 100, 2)
         result = class_names[np.argmax(prediction)]
-
-        # Format result nicely
         result_text = result.replace('_', ' ').replace('  ', ' ')
 
         return render_template('index.html',
                                result=result_text,
                                confidence=confidence,
-                               img_filename=filename)  # ✅ fixed variable name
+                               img_filename=filename)
 
     except Exception as e:
         return render_template('index.html', result=f"❌ Error: {str(e)}")
