@@ -1,4 +1,4 @@
 workers = 1
-threads = 1
-timeout = 120
 worker_class = "sync"
+timeout = 300
+max_request = 1
