@@ -31,12 +31,13 @@
 
         {% if result %}
         <div class="result-box">
-            <h2>🌱 Result: {{ result }}</h2>
-            <img src="{{ url_for('static', filename='uploads/' + img_filename) }}" 
-                 alt="Uploaded Image" 
-                 style="max-width:300px; border-radius:10px; margin-top:10px;">
-        </div>
-        {% endif %}
+        <h2>🌱 Result: {{ result }}</h2>
+        <p>Confidence: {{ confidence }}%</p>
+        <img src="{{ url_for('static', filename='uploads/' + img_filename) }}" 
+         alt="Uploaded Image" 
+         style="max-width:300px; border-radius:10px; margin-top:10px;">
+    </div>
+    {% endif %}
 
     </div>
 

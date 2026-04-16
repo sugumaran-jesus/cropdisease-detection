@@ -1,24 +1,35 @@
 import os
 import gdown
 import numpy as np
+import tensorflow as tf
 from flask import Flask, render_template, request
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
 
 app = Flask(__name__)
 
+# Speed up CPU prediction
+tf.config.threading.set_intra_op_parallelism_threads(2)
+tf.config.threading.set_inter_op_parallelism_threads(2)
+
 UPLOAD_FOLDER = "static/uploads/"
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Download model from Google Drive
+# Create uploads folder if not exists
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Download model from Google Drive if not exists
 MODEL_PATH = "model.h5"
 if not os.path.exists(MODEL_PATH):
+    print("Downloading model...")
     gdown.download(
         "https://drive.google.com/uc?id=1JqrQB23cZVjXMnxEQGntzLhHzEGxXWL0",
         MODEL_PATH, quiet=False
     )
 
+print("Loading model...")
 model = load_model(MODEL_PATH)
+print("Model loaded successfully!")
 
 # Class names
 class_names = sorted([
@@ -45,21 +56,41 @@ def index():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    if 'file' not in request.files:
-        return "No file uploaded"
+    try:
+        # Check file uploaded
+        if 'file' not in request.files:
+            return render_template('index.html', result="❌ No file uploaded")
 
-    file = request.files['file']
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-    file.save(filepath)
+        file = request.files['file']
 
-    img = image.load_img(filepath, target_size=(128, 128))
-    img_array = image.img_to_array(img) / 255.0
-    img_array = np.expand_dims(img_array, axis=0)
+        if file.filename == '':
+            return render_template('index.html', result="❌ No file selected")
 
-    prediction = model.predict(img_array)
-    result = class_names[np.argmax(prediction)]
+        # Save file
+        filename = file.filename
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
 
-    return render_template('index.html', result=result, img_path=filepath)
+        # Preprocess image
+        img = image.load_img(filepath, target_size=(128, 128))
+        img_array = image.img_to_array(img) / 255.0
+        img_array = np.expand_dims(img_array, axis=0)
+
+        # Predict
+        prediction = model.predict(img_array)
+        confidence = round(float(np.max(prediction)) * 100, 2)
+        result = class_names[np.argmax(prediction)]
+
+        # Format result nicely
+        result_text = result.replace('_', ' ').replace('  ', ' ')
+
+        return render_template('index.html',
+                               result=result_text,
+                               confidence=confidence,
+                               img_filename=filename)  # ✅ fixed variable name
+
+    except Exception as e:
+        return render_template('index.html', result=f"❌ Error: {str(e)}")
 
 if __name__ == '__main__':
     app.run(debug=True)
