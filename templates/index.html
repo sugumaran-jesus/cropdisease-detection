@@ -14,24 +14,49 @@
         <p class="subtitle">Upload a leaf image to detect disease instantly</p>
 
         <form action="/predict" method="post" enctype="multipart/form-data">
-            <input type="file" name="file" id="fileInput" required>
             
             <label for="fileInput" class="upload-box">
                 📁 Click to Upload Image
             </label>
 
-            <button type="submit" class="btn">Predict</button>
+            <input type="file" name="file" id="fileInput" accept="image/*" required style="display:none;">
+
+            <!-- Image Preview Before Submit -->
+            <div id="previewContainer" style="display:none; text-align:center; margin:15px 0;">
+                <img id="preview" src="#" alt="Preview" style="max-width:300px; border-radius:10px; border:2px solid #4CAF50;">
+            </div>
+
+            <button type="submit" class="btn">🔍 Predict</button>
         </form>
 
         {% if result %}
         <div class="result-box">
-            <h2>{{ result }}</h2>
-            <img src="{{ img_path }}" alt="Uploaded Image">
+            <h2>🌱 Result: {{ result }}</h2>
+            <img src="{{ url_for('static', filename='uploads/' + img_filename) }}" 
+                 alt="Uploaded Image" 
+                 style="max-width:300px; border-radius:10px; margin-top:10px;">
         </div>
         {% endif %}
+
     </div>
 
 </div>
+
+<script>
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const preview = document.getElementById('preview');
+            const previewContainer = document.getElementById('previewContainer');
+            
+            preview.src = URL.createObjectURL(file);
+            previewContainer.style.display = 'block';
+
+            // Update label text to show filename
+            document.querySelector('.upload-box').textContent = '✅ ' + file.name;
+        }
+    });
+</script>
 
 </body>
 </html>
