@@ -1,6 +1,7 @@
 setuptools==69.5.1
 wheel
 flask
+flask-cors
 gunicorn
 numpy
 pillow
